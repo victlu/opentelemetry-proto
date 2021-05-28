@@ -10,7 +10,8 @@ namespace MetricBenchmark
 {
     public class MetricBench
     {
-        [Params("0.8.0", "0.9.0")]
+        // [Params("0.8.0", "0.9.0")]
+        [Params("0.9.0")]
         public string Version { get; set; }
 
         [Params("Small")]
@@ -24,7 +25,7 @@ namespace MetricBenchmark
         private byte[] gaugeMessage;
 
         [GlobalSetup]
-        void Setup()
+        public void Setup()
         {
             var config = this.configSet[0];
             foreach (var set in this.configSet)
@@ -53,16 +54,22 @@ namespace MetricBenchmark
             this.gaugeMessage = this.metricBench.EncodeGauge();
         }
 
-        [Benchmark]
-        public byte[] EncodeGauge()
+        [GlobalCleanup]
+        public void Cleanup()
         {
-            return this.metricBench?.EncodeGauge();
+            Console.WriteLine($"Gauge message size: {this.gaugeMessage.Length}");
         }
 
         [Benchmark]
+        public byte[] EncodeGauge()
+        {
+            return this.metricBench.EncodeGauge();
+        }
+
+        // [Benchmark]
         public List<String> DecodeGauge()
         {
-            return this.metricBench?.Decode(this.gaugeMessage);
+            return this.metricBench.Decode(this.gaugeMessage);
         }
     }
 }
