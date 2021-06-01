@@ -1,4 +1,4 @@
-PROTO_VERSIONS := v0.4.0 v0.8.0 v0.9.0
+PROTO_VERSIONS := v0.9.0 HEAD
 
 help:
 	@echo "gen - Get versions of OTLP proto to the proto/ folder. Package names modified to include version."

@@ -1,17 +1,22 @@
 ﻿using System;
+using System.IO;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Environments;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 
-namespace Benchmark
+namespace MetricBenchmark
 {
     class Program
     {
         static void Main(string[] args)
-            => BenchmarkSwitcher
+        {
+            File.Delete(MetricBench.filename);
+
+            BenchmarkSwitcher
                 .FromAssembly(typeof(Program).Assembly)
                 .Run(args);
+        }
     }
 }

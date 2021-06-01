@@ -6,6 +6,12 @@ namespace MetricBenchmark
     {
         byte[] EncodeGauge();
 
+        byte[] EncodeSum();
+
+        byte[] EncodeSummary();
+
+        byte[] EncodeHistogram();
+
         List<string> Decode(byte[] bytes);
     }
 }

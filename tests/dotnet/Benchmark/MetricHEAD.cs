@@ -3,20 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
-using Opentelemetry.V090.Proto.Collector.Metrics.V1;
-using Opentelemetry.V090.Proto.Common.V1;
-using Opentelemetry.V090.Proto.Metrics.V1;
-using Opentelemetry.V090.Proto.Resource.V1;
+using Opentelemetry.HEAD.Proto.Collector.Metrics.V1;
+using Opentelemetry.HEAD.Proto.Common.V1;
+using Opentelemetry.HEAD.Proto.Metrics.V1;
+using Opentelemetry.HEAD.Proto.Resource.V1;
 
 namespace MetricBenchmark
 {
-    public class MetricV090 : IMetricBench
+    public class MetricHEAD : IMetricBench
     {
         private (string name, object value)[] resources;
         private (string name, string value)[] labels;
         private MetricBench.MetricBenchConfig config;
 
-        public MetricV090(MetricBench.MetricBenchConfig config)
+        public MetricHEAD(MetricBench.MetricBenchConfig config)
         {
             this.config = config;
 
@@ -61,10 +61,12 @@ namespace MetricBenchmark
                     for (int dp = 0; dp < this.config.numDataPoints; dp++)
                     {
                         var datapoint = new NumberDataPoint();
+                        datapoint.Flags = (1<<7) | (1<<29);
 
                         datapoint.StartTimeUnixNano = (ulong)dt.ToUnixTimeMilliseconds() * 100000;
                         datapoint.TimeUnixNano = (ulong)dt.ToUnixTimeMilliseconds() * 100000;
                         datapoint.Attributes.AddRange(attribs);
+                        datapoint.Flags = (1<<7) | (1<<29);
 
                         if (this.config.isDouble)
                         {
@@ -123,6 +125,7 @@ namespace MetricBenchmark
                         datapoint.StartTimeUnixNano = (ulong)dt.ToUnixTimeMilliseconds() * 100000;
                         datapoint.TimeUnixNano = (ulong)dt.ToUnixTimeMilliseconds() * 100000;
                         datapoint.Attributes.AddRange(attribs);
+                        datapoint.Flags = (1<<7) | (1<<29);
 
                         if (this.config.isDouble)
                         {
@@ -179,6 +182,7 @@ namespace MetricBenchmark
                         datapoint.StartTimeUnixNano = (ulong)dt.ToUnixTimeMilliseconds() * 100000;
                         datapoint.TimeUnixNano = (ulong)dt.ToUnixTimeMilliseconds() * 100000;
                         datapoint.Attributes.AddRange(attribs);
+                        datapoint.Flags = (1<<7) | (1<<29);
 
                         datapoint.Count = 1;
                         datapoint.Sum = tsx + 100.1;
@@ -238,6 +242,7 @@ namespace MetricBenchmark
                         datapoint.StartTimeUnixNano = (ulong)dt.ToUnixTimeMilliseconds() * 100000;
                         datapoint.TimeUnixNano = (ulong)dt.ToUnixTimeMilliseconds() * 100000;
                         datapoint.Attributes.AddRange(attribs);
+                        datapoint.Flags = (1<<7) | (1<<29);
 
                         metric.Histogram.DataPoints.Add(datapoint);
                     }
@@ -314,6 +319,7 @@ namespace MetricBenchmark
 
                         if (gaugedps is not null)
                         {
+                            ulong flags = 0;
                             long suml = 0;
                             double sumd = 0;
 
@@ -331,6 +337,8 @@ namespace MetricBenchmark
                                         sumd += dp.AsDouble;
                                         break;
                                 }
+
+                                flags = dp.Flags;
                             }
 
                             extracts.Add($"sum:{suml}/{sumd}");
@@ -338,6 +346,8 @@ namespace MetricBenchmark
 
                         if (summarydps is not null)
                         {
+                            ulong flags = 0;
+
                             foreach (var dp in summarydps)
                             {
                                 extracts.Add(string.Join(",", dp.Attributes.Select(lbl => $"{lbl.Key}={lbl.Value.ToString()}")));
@@ -345,11 +355,15 @@ namespace MetricBenchmark
                                 extracts.Add($"{dp.Count}/{dp.Sum}");
 
                                 extracts.Add(string.Join(",", dp.QuantileValues.Select(qv => $"{qv.Quantile}:{qv.Value}")));
+
+                                flags = dp.Flags;
                             }
                         }
 
                         if (histdps is not null)
                         {
+                            ulong flags = 0;
+
                             foreach (var dp in histdps)
                             {
                                 extracts.Add(string.Join(",", dp.Attributes.Select(lbl => $"{lbl.Key}={lbl.Value.ToString()}")));
@@ -378,6 +392,8 @@ namespace MetricBenchmark
                                 }
 
                                 extracts.Add($"sum:{suml}/{sumd}");
+
+                                flags = dp.Flags;
                             }
                         }
                     }
