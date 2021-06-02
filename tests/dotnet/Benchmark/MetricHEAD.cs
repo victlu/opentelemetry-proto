@@ -43,10 +43,7 @@ namespace MetricBenchmark
             for (int lib = 0; lib < this.config.numLibs; lib++)
             {
                 var instMetric = new InstrumentationLibraryMetrics();
-
-                instMetric.InstrumentationLibrary = new InstrumentationLibrary();
-                instMetric.InstrumentationLibrary.Name = $"Library{lib}";
-                instMetric.InstrumentationLibrary.Version = "1.0.0";
+                instMetric.InstrumentationLibrary = this.BuildInstrumentationLibrary();
 
                 for (int m = 0; m < this.config.numMetrics; m++)
                 {
@@ -61,7 +58,6 @@ namespace MetricBenchmark
                     for (int dp = 0; dp < this.config.numDataPoints; dp++)
                     {
                         var datapoint = new NumberDataPoint();
-                        datapoint.Flags = (1<<7) | (1<<29);
 
                         datapoint.StartTimeUnixNano = (ulong)dt.ToUnixTimeMilliseconds() * 100000;
                         datapoint.TimeUnixNano = (ulong)dt.ToUnixTimeMilliseconds() * 100000;
@@ -102,10 +98,7 @@ namespace MetricBenchmark
             for (int lib = 0; lib < this.config.numLibs; lib++)
             {
                 var instMetric = new InstrumentationLibraryMetrics();
-
-                instMetric.InstrumentationLibrary = new InstrumentationLibrary();
-                instMetric.InstrumentationLibrary.Name = $"Library{lib}";
-                instMetric.InstrumentationLibrary.Version = "1.0.0";
+                instMetric.InstrumentationLibrary = this.BuildInstrumentationLibrary();
 
                 for (int m = 0; m < this.config.numMetrics; m++)
                 {
@@ -161,10 +154,7 @@ namespace MetricBenchmark
             for (int lib = 0; lib < this.config.numLibs; lib++)
             {
                 var instMetric = new InstrumentationLibraryMetrics();
-
-                instMetric.InstrumentationLibrary = new InstrumentationLibrary();
-                instMetric.InstrumentationLibrary.Name = $"Library{lib}";
-                instMetric.InstrumentationLibrary.Version = "1.0.0";
+                instMetric.InstrumentationLibrary = this.BuildInstrumentationLibrary();
 
                 for (int m = 0; m < this.config.numMetrics; m++)
                 {
@@ -221,10 +211,7 @@ namespace MetricBenchmark
             for (int lib = 0; lib < this.config.numLibs; lib++)
             {
                 var instMetric = new InstrumentationLibraryMetrics();
-
-                instMetric.InstrumentationLibrary = new InstrumentationLibrary();
-                instMetric.InstrumentationLibrary.Name = $"Library{lib}";
-                instMetric.InstrumentationLibrary.Version = "1.0.0";
+                instMetric.InstrumentationLibrary = this.BuildInstrumentationLibrary();
 
                 for (int m = 0; m < this.config.numMetrics; m++)
                 {
@@ -243,6 +230,22 @@ namespace MetricBenchmark
                         datapoint.TimeUnixNano = (ulong)dt.ToUnixTimeMilliseconds() * 100000;
                         datapoint.Attributes.AddRange(attribs);
                         datapoint.Flags = (1<<7) | (1<<29);
+
+                        for (int qv = 0; qv < this.config.numQV; qv++)
+                        {
+                            datapoint.Count++;
+                            datapoint.Sum += qv;
+                            datapoint.BucketCounts.Add(1);
+                            datapoint.ExplicitBounds.Add(qv * (1 / this.config.numQV));
+
+                            for (int ex = 0; ex < this.config.numExemplars; ex++)
+                            {
+                                var exp = new Exemplar();
+                                exp.TimeUnixNano = (ulong)dt.ToUnixTimeMilliseconds() * 100000;
+                                exp.AsInt = ex;
+                                datapoint.Exemplars.Add(exp);
+                            }
+                        }
 
                         metric.Histogram.DataPoints.Add(datapoint);
                     }
@@ -299,6 +302,7 @@ namespace MetricBenchmark
                         extracts.Add(metric.Name);
 
                         RepeatedField<NumberDataPoint> gaugedps = null;
+                        RepeatedField<NumberDataPoint> sumdps = null;
                         RepeatedField<SummaryDataPoint> summarydps = null;
                         RepeatedField<HistogramDataPoint> histdps = null;
 
@@ -306,6 +310,10 @@ namespace MetricBenchmark
                         {
                             case Metric.DataOneofCase.Gauge:
                                 gaugedps = metric.Gauge.DataPoints;
+                                break;
+
+                            case Metric.DataOneofCase.Sum:
+                                sumdps = metric.Sum.DataPoints;
                                 break;
 
                             case Metric.DataOneofCase.Summary:
@@ -324,6 +332,33 @@ namespace MetricBenchmark
                             double sumd = 0;
 
                             foreach (var dp in gaugedps)
+                            {
+                                extracts.Add(string.Join(",", dp.Attributes.Select(lbl => $"{lbl.Key}={lbl.Value.ToString()}")));
+
+                                switch (dp.ValueCase)
+                                {
+                                    case NumberDataPoint.ValueOneofCase.AsInt:
+                                        suml += dp.AsInt;
+                                        break;
+
+                                    case NumberDataPoint.ValueOneofCase.AsDouble:
+                                        sumd += dp.AsDouble;
+                                        break;
+                                }
+
+                                flags = dp.Flags;
+                            }
+
+                            extracts.Add($"sum:{suml}/{sumd}");
+                        }
+
+                        if (sumdps is not null)
+                        {
+                            ulong flags = 0;
+                            long suml = 0;
+                            double sumd = 0;
+
+                            foreach (var dp in sumdps)
                             {
                                 extracts.Add(string.Join(",", dp.Attributes.Select(lbl => $"{lbl.Key}={lbl.Value.ToString()}")));
 
@@ -426,6 +461,14 @@ namespace MetricBenchmark
             }
 
             return resource;
+        }
+
+        private InstrumentationLibrary BuildInstrumentationLibrary()
+        {
+            var lib = new InstrumentationLibrary();
+            lib.Name = $"Library{lib}";
+            lib.Version = "1.0.0";
+            return lib;
         }
 
         private RepeatedField<KeyValue> BuildAttributes()
