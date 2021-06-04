@@ -180,6 +180,17 @@ message Metric {
   }
 }
 
+// DataPointFlags is defined as a protobuf 'uint32' type, and to be used as a
+// bit-field in representing 32 distinct boolean flags.
+enum DataPointFlags {
+  FLAG_NONE = 0;
+
+  // This DataPoint is valid but has no recorded value.
+  FLAG_NO_RECORDED_VALUE = 1;
+
+  // Bits 2-32 are reserved for future use.
+}
+
 // IntGauge is deprecated.  Use Gauge with an integer value in NumberDataPoint.
 //
 // IntGauge represents the type of a int scalar metric that always exports the
@@ -525,6 +536,11 @@ message HistogramDataPoint {
   // Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
   // 1970.
   fixed64 time_unix_nano = 3;
+
+  // Field "flags" is used as a bit-field as defined in enum DataPointFlags.
+  // If FLAG_NO_RECORDED_VALUE is set, the "count", "sum", "bucket_counts",
+  // "explicit_bounds" fields are undefined.
+  uint32 flags = 10;
 
   // count is the number of values in the population. Must be non-negative. This
   // value must be equal to the sum of the "count" fields in buckets if a
